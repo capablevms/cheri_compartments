@@ -1,0 +1,35 @@
+% --------------------------------
+% Software Development Team Macros
+% --------------------------------
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{softdev}[2013/09/16 Softdev Macros]
+
+\ProcessOptions\relax
+
+%% macros and includes for the comments. Set boolean to enable/disable
+\RequirePackage{amssymb}
+\RequirePackage{xcolor}
+\RequirePackage{xstring}  % for IfSubr
+
+% shown comment tags
+\def\@SDShowCommentTags{default}
+\def\SDShowCommentTags#1{\def\@SDShowCommentTags{#1}}
+
+\newcommand\ifSDCommentTagEnabled[2]{\IfSubStr{,#2,}{,#1,}}
+
+\newcommand\mynote[3][default]{%
+  \textcolor{red}{%
+    \ifSDCommentTagEnabled{#1}{\@SDShowCommentTags}{%
+      \fbox{\bfseries\sffamily\scriptsize#2}%
+      {\small$\blacktriangleright$\textsf{\emph{#3}}$\blacktriangleleft$}%
+    }{}%
+  }%
+}
+
+\newcommand\jacob[2][default]{\mynote[#1]{Jacob}{#2}}
+\newcommand\jeremy[2][default]{\mynote[#1]{Jeremy}{#2}}
+\newcommand\laurie[2][default]{\mynote[#1]{Laurie}{#2}}
+\newcommand\pino[2][default]{\mynote[#1]{Pino}{#2}}
+\newcommand\cris[2][default]{\mynote[#1]{Cristian}{#2}}
+%% end of comment macros

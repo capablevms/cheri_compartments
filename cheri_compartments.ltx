@@ -1,0 +1,72 @@
+%&cheri_compartments_preamble
+\endofdump
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+CHERI capabilities implicitly portion a program into \emph{compartments}, but
+there are at least two fundamentally different ways of creating CHERI
+compartments -- both of which can be used within a single process. Our aim in
+this draft paper is to outline the different forms of compartments that CHERI
+enables.
+
+
+\section{Background}
+
+We assume high-level familiarity with capabilities (an approachable historical overview
+is~\cite{levy84capability}, which may usefully be augmented by more recent work
+such as \cite{miller06robust}),
+CHERI generally (see e.g.~this introduction~\cite{watson20cheriintroduction}),
+the CHERI ABI~\cite{brooks19cheriabi},
+and CHERI C (the dialect of C that CHERI defines)~\cite{watson20chericprogramming}.
+
+Because CHERI has been developed over a number of years, and is explained over
+a variety of documentation and papers, some concepts have more than one name.
+We have found that some of those names make it difficult to talk, and sometimes
+reason about, capability usage.
+Unfortunately, we can think of no better solution to this than to propose our
+own terminology.
+
+We use the term \textit{CHERI} to refer to the `abstract capability machine'
+that software can observe: that is, the combination of a capability hardware
+instruction set, an ABI, and a user-facing library that exposes capability-related functions.
+We refer to specific hardware implementations by their name
+(e.g.~Arm's `Morello', or `CHERI RISC-V').
+
+CHERI capabilities are immutable and thus a new \emph{child}
+capability must be derived from one or more \emph{parent} capabilities.
+We refer to a capability as \emph{authentic} (what CHERI calls
+`tagged' or `valid') if it has been derived from its parents according
+to CHERI's rules, or \emph{inauthentic} (what CHERI calls `untagged' or `invalid')
+otherwise. A capability consists of an \emph{address} in memory
+and a set of \emph{permissions}. Amongst the permissions are
+\emph{bounds} -- the region of memory an authentic capability is allowed to
+read/write from/to. A capability's bounds are from a \emph{low} (inclusive) to
+a \emph{high} (exclusive) address and we refer to `a bound of $x$ bytes' to mean
+a capability where $\textit{high}-\textit{low}=x$.
+If a capability's address is contained within its bounds we refer to the capability as
+a whole as \emph{in-bounds} or \emph{out-of-bounds} otherwise
+(see~\cite{woodruff19chericoncentrate} for an explanation of why an authentic
+capability might have an out-of-bounds address). Other permissions include
+boolean flags such as whether a capability can read/write to memory addresses
+within its bounds.
+
+As well as capabilities (which on Morello and CHERI RISC-V, for example, are
+implemented as double-width addresses), CHERI also allows `traditional' single-width addresses
+to be used. Conventionally, a program which uses both traditional addresses and
+capabilities is said to be operating in \emph{hybrid} mode while a program
+which uses only capabilities is in \emph{pure capability} mode.
+
+
+\section{Pure capability compartmentalisation}
+
+
+\section{Hybrid compartmentalisation}
+
+
+\bibliographystyle{plain}
+\bibliography{bib}
+
+\end{document}
