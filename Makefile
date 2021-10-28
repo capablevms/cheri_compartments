@@ -29,11 +29,3 @@ cheri_compartments_preamble.fmt: cheri_compartments_preamble.ltx
 
 bib.bib: softdevbib/softdev.bib
 	softdevbib/bin/prebib softdevbib/softdev.bib > bib.bib
-
-softdevbib-update: softdevbib
-	cd softdevbib && git pull
-
-softdevbib/softdev.bib: softdevbib
-
-softdevbib:
-	git clone https://github.com/softdevteam/softdevbib.git
