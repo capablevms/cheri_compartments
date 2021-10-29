@@ -29,3 +29,7 @@ cheri_compartments_preamble.fmt: cheri_compartments_preamble.ltx
 
 bib.bib: softdevbib/softdev.bib
 	softdevbib/bin/prebib softdevbib/softdev.bib > bib.bib
+
+softdevbib/softdev.bib:
+	git submodule init
+	git submodule update
