@@ -7,10 +7,10 @@
 \section{Introduction}
 
 CHERI capabilities implicitly portion a program into \emph{compartments}, but
-there are at least two fundamentally different ways of creating CHERI
-compartments -- both of which can be used within a single process. Our aim in
-this draft paper is to outline the different forms of compartments that CHERI
-enables.
+there are two fundamentally different flavours of creating CHERI compartments
+-- both of which can be used within a single process -- and several
+sub-flavours of each. Our aim in this draft paper is to outline the different
+forms of compartments that CHERI enables.
 
 
 \section{Background}
@@ -61,6 +61,77 @@ which uses only capabilities is in \emph{pure capability} mode.
 
 
 \section{Pure capability compartmentalisation}
+
+\begin{figure}
+\begin{center}
+\begin{tikzpicture}[
+  align=center,
+  node distance=2.8cm and 4cm,
+  every by arrow/.style={*->},
+  every edge/.style={draw,->,>=stealth',
+  auto,
+  semithick
+}]
+\node[state, shape=rectangle] (B1) {};
+\node[state, shape=rectangle, right of=B1] (B2) {};
+\node[state, shape=rectangle, right of=B2] (B3) {};
+\node[state, shape=rectangle, right of=B3] (B4) {};
+\node[state, shape=rectangle, right of=B4] (B5) {};
+\path[->] (B1) edge[above] node{C1} (B2);
+\path[->] (B2) edge[bend left, above] node{C2} (B3);
+\path[->] (B3) edge[bend left, below] node{C3} (B2);
+\path[->] (B3) edge[above] node{C4} (B4);
+\path[->] (B4) edge[above] node{C5} (B5);
+\end{tikzpicture}
+
+\vspace{10pt}
+
+\begin{tabular}{ll}
+\toprule
+Root set & Reachable set \\
+\midrule
+\{C1\} & \{C1, C2, C3, C4, C5\} \\
+\{C2\} & \{C2, C3, C4, C5\} \\
+\{C3\} & \{C2, C3, C4, C5\} \\
+\{C4\} & \{C4, C5\} \\
+\{C5\} & \{C5\} \\
+\bottomrule
+\end{tabular}
+
+\caption{Pure capabilities form a graph: the root set of capabilities a program
+has access to determine the full set of reachable capabilities the
+program can reach. The diagram above represents a simplification of the
+running state of a pure capability program: each square constitutes a
+block of memory containing zero or more capabilities; an outgoing edge
+from a block signifies that it stores a capability pointing to another
+block; each capability has the \texttt{LOAD\_CAP} permission set so
+that it can load capabilities from the block of memory points to; and
+each capability has its bounds set to cover
+exactly one other block of memory. The table then shows the graph of
+reachable capabilities if, at a specific point in time, the root set of
+capabilities (i.e.~those capabilities the program can immediately
+access because they are stored in e.g.~registers) contains exactly one
+element.}
+\end{center}
+\label{fig:reachability}
+\end{figure}
+
+
+Pure capability CHERI programs implicitly or explicitly use capabilities to
+define compartments. Figure~\ref{fig:reachability} shows an example of one
+particular flavour of compartment, but there are others. In this Section we
+show examples of different, overlapping, flavours of pure capability
+compartments.
+
+
+\subsection{Memory compartmentalisation}
+
+\laurie{LOAD\_CAP, I think, implicitly defines this. entirely dynamic.}
+
+
+\subsection{Link-time compartmentalisation}
+
+\laurie{What Hesham calls `ELF/linkage-based or library-based compartmentalization'}
 
 
 \section{Hybrid compartmentalisation}
