@@ -136,6 +136,84 @@ compartments.
 
 \section{Hybrid compartmentalisation}
 
+\subsection{Morello unattended compartmentalisation}
+
+Supposing compartmentalisation is performed between to unprivileged compartments
+via a privileged entity, it makes sense for an attacker to focus their efforts
+attacking that privileged compartment switcher. One possible approach to tighten
+security is to minimize the functionality of such a switcher: by identifying
+what it means to perform a transition from one compartment to another, we can
+prepare a switching mechanism that only performs the required instructions, and
+is thus less likely to be misused.
+
+To exemplify, we model a simple system with two compartments (and will be
+abstracting away some of the finer details, such as memory management). Suppose
+we have two compartments, named \(f\) and \(g\). To further simplify this model,
+we shall assume each compartment is comprised of a single function of interest,
+and a compartment transition involves executing that particular function, then
+returning. We shall further assume that each compartment has its own memory
+region, which serves as both stack and heap (again, specific details of memory
+allocation will be omitted), disjoint with memory regions of the other
+compartment.
+
+With the above model, a compartment transition would involve:
+\begin{itemize}
+\item identify the function within the target compartment to be called;
+\item install a capability in the \texttt{DDC} which covers the memory region
+corresponding to the target compartment;
+\item install a capability pointing to the target function in the \texttt{PCC},
+and start execution;
+\item upon returning from executing the target function, reinstall the
+\texttt{DDC} corresponding to the source compartment memory region.
+\end{itemize}
+The above process involves some level of trust between compartments, as they
+require access to capabilities defining memory accessible by the other
+compartment, as well as executable code within that compartment. Having access
+to these capabilities means lack of CHERI security guarantees over these ares in
+memory. Thus, we can strengthen our model by suggesting \emph{mutual distrust}
+between compartments themselves. This involves adding a level of indirection in
+the above process. We define a concrete ``transition state'', comprising of both
+executable code involving setting the state for compartment transitions (i.e.,
+installing capabilities with correct bounds in \texttt{PCC} and \texttt{DDC}
+registers), as well as a memory region containing compartment information (the
+aforementioned capabilities defining compartments' allocated memory regions, and
+visible executable code).
+
+Let's update the process above, by adding a setup phase to create required
+capabilities ahead of time, and to introduce indirection during the compartment
+transition function. We require the following capabilities be constructed ahead
+of time, in a privileged environment:
+\begin{itemize}
+\item for each compartment, a capability defining the accessible memory region
+of that compartment;
+\item for each compartment, a capability defining the executable part of that
+compartment which should be callable by other compartments;
+\item a capability defining a separate memory region to hold the above
+capabilities;
+\item a capability covering the code which will perform the transition;
+\item a capability that points to the memory address where the previous two
+capabilities are stored, consecutively, and in that order.
+\end{itemize}
+The first two types of capabilities will be stored under the memory region
+allocated for compartment transitioning. The following two capabilities will
+similarly be stored in the same memory region, but available to the compartments
+indirectly by the final capability (which shall be discussed in more detail
+shortly). Copies of the final capability are provided to each compartment, to be
+stored within their respective memory regions, and to facilitate compartment
+transitioning.
+
+With the above setup in place, we can observe that
+\begin{enumerate}[label={(\alph*)}]
+\item during compartment transitioning, we have access to data defining each
+compartment's visible executable code and accessible memory,
+\item and compartment transitioning is done within its own, separate scope, and
+does not give full permissions over the whole system.
+\end{enumerate}
+
+
+
+
+
 
 \bibliographystyle{plain}
 \bibliography{bib}
