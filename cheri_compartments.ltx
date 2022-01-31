@@ -138,13 +138,14 @@ compartments.
 
 \subsection{Morello unattended compartmentalisation}
 
-Supposing compartmentalisation is performed between to unprivileged compartments
-via a privileged entity, it makes sense for an attacker to focus their efforts
-attacking that privileged compartment switcher. One possible approach to tighten
-security is to minimize the functionality of such a switcher: by identifying
-what it means to perform a transition from one compartment to another, we can
-prepare a switching mechanism that only performs the required instructions, and
-is thus less likely to be misused.
+Supposing compartmentalisation is performed between two unprivileged
+compartments via a privileged entity, it makes sense for an attacker to focus
+their efforts attacking that privileged compartment switcher, to perhaps gain
+access to the whole system. One possible approach to tighten security is to
+minimize the functionality of such a switcher: by identifying what it means to
+perform a transition from one compartment to another, we can prepare a switching
+mechanism that only performs the required instructions, with minimal interaction
+with the rest of the environment, and is thus less likely to be misused.
 
 To exemplify, we model a simple system with two compartments (and will be
 abstracting away some of the finer details, such as memory management). Suppose
@@ -156,9 +157,11 @@ region, which serves as both stack and heap (again, specific details of memory
 allocation will be omitted), disjoint with memory regions of the other
 compartment.
 
+(TODO: explain DDC/PCC)
 With the above model, a compartment transition would involve:
 \begin{itemize}
-\item identify the function within the target compartment to be called;
+\item identify the target compartment to be transitioned to, effectively
+executing the corresponding compartment function;
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
 \item install a capability pointing to the target function in the \texttt{PCC},
@@ -203,12 +206,37 @@ stored within their respective memory regions, and to facilitate compartment
 transitioning.
 
 With the above setup in place, we can observe that
-\begin{enumerate}[label={(\alph*)}]
+\begin{enumerate*}[label=(\alph*)]
 \item during compartment transitioning, we have access to data defining each
 compartment's visible executable code and accessible memory,
 \item and compartment transitioning is done within its own, separate scope, and
 does not give full permissions over the whole system.
-\end{enumerate}
+\end{enumerate*}
+However, it is important to note that this transition state does not have
+privileged execution. It is indeed the case that were a malign actor gain
+control of the memory region where comaprtment information is stored, it would
+be able to gain control of all compartments using that specific transition code.
+However, it would not gain control of any other part of the whole system.
+
+The actual process by which the switching code is invoked is via the Morello
+\texttt{ldpblr} instruction\cite{...}, which stands for ``Load Pair Branch with
+Link''. Given a register containing a capability, the instructions dereferences
+the memory address indicated by the value of the capability, reads two
+consecutive capabilities stored at that memory address, installs the first
+capability in the \texttt{DDC}, and performs a \texttt{blr} with the second
+(meaning installing the second in the \texttt{PCC}, and updating the
+\texttt{CLR} to the following instruction, to facilitate returning from the
+called function). This level of indirection allows a compartment to essentially
+change the state defined by the environment, by setting both \texttt{DDC} and
+\texttt{PCC} at once, without actually having access to them both as they would
+potentially reside outside memory defined as accessibly by the compartment's own
+\texttt{DDC} capability. Further, we can \emph{seal} the capability providing
+the indirect memory address of the switcher's capabilities with a
+Morello-specific object type of \texttt{lpb}, indicating the capability should
+only be used as part of \texttt{lpb}-like instructions (which include
+\texttt{ldpblr}). This, however, requires the indirect memory capability be
+installed in register \texttt{c29}, as the unsealing operation is only performed
+if that is the source register provided to \texttt{ldpblr}.
 
 
 
