@@ -206,12 +206,12 @@ stored within their respective memory regions, and to facilitate compartment
 transitioning.
 
 With the above setup in place, we can observe that
-\begin{enumerate*}[label=(\alph*)]
+\begin{enumerate}
 \item during compartment transitioning, we have access to data defining each
 compartment's visible executable code and accessible memory,
 \item and compartment transitioning is done within its own, separate scope, and
 does not give full permissions over the whole system.
-\end{enumerate*}
+\end{enumerate}
 However, it is important to note that this transition state does not have
 privileged execution. It is indeed the case that were a malign actor gain
 control of the memory region where comaprtment information is stored, it would
