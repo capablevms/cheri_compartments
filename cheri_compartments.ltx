@@ -136,11 +136,7 @@ compartments.
 
 \section{Hybrid compartmentalisation}
 
-\subsection{Morello unattended compartmentalisation}
-
-\laurie{what does `unattended' mean here?}
-\al{I guess a poor way of saying ``Mutually distrusting compartments'', while
-using the word ``compartmentalisation''. Feel free to change.}
+\subsection{Hybrid \laurie{Morello or CHERI in general?} data compartmentalisation}
 
 \laurie{i assert that this section is
 probably better called `Hybrid data compartmentalisation', because we're not
@@ -150,7 +146,10 @@ to RISC-V (or MIPS or ...).}
 architectures, but I am unfamiliar with non-Morello CHERI ISAs to be able to
 say. For instance, immediately sealing with a literal (as we do for the indirect
 capability, to be used with `lpb` instructions, I believe is not a CHERI thing,
-but a Morello one --- although I might be wrong).}
+but a Morello one --- although I might be wrong).}\laurie{aha, let's ask jacob
+or otherwise try to work out if this is morello only or not. i reckon that
+it's probably a generic cheri feature to some extent, but there's probably
+not a nice api for it, so you have to hack it on each platform. i might be wrong!}
 
 \laurie{one thing this paragraph made me realise is that if the user creates
 $n$ data compartments at run-time then we actually have $n+1$ compartments as
@@ -203,6 +202,11 @@ expose, and either copy those to all compartments, or perhaps hash them somehow,
 store the capabilities in the switcher for practical use, but each compartment
 would know what hash to use when it want to call a specific function from
 another compartment.}
+\laurie{let me try asking a variant: if i have $n$ compartments in my
+system and I want to switch to compartment $C_{n - 1}$, I need to have some
+sort of identifier that says ``switch to $C_{n - 1}$ and execute some
+function''. My question is: what is the identifier? If it's a hash I can
+forge it. That suggests the ID should probably be a sealed capability?}
 %
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
