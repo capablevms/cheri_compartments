@@ -139,15 +139,28 @@ compartments.
 \subsection{Morello unattended compartmentalisation}
 
 \laurie{what does `unattended' mean here?}
+\al{I guess a poor way of saying ``Mutually distrusting compartments'', while
+using the word ``compartmentalisation''. Feel free to change.}
 
 \laurie{i assert that this section is
 probably better called `Hybrid data compartmentalisation', because we're not
 compartmentalising the PCC, and i think the techniques are trivially adaptable
 to RISC-V (or MIPS or ...).}
+\al{As long as certain features/instructions are available in those
+architectures, but I am unfamiliar with non-Morello CHERI ISAs to be able to
+say. For instance, immediately sealing with a literal (as we do for the indirect
+capability, to be used with `lpb` instructions, I believe is not a CHERI thing,
+but a Morello one --- although I might be wrong).}
 
 \laurie{one thing this paragraph made me realise is that if the user creates
 $n$ data compartments at run-time then we actually have $n+1$ compartments as
 the switcher is, itself, implicitly a compartment.}
+\al{Implicitly, yes. There must be a mechanism to perform the mechanics required
+for the transition, and in order to make that mechanism opaque to compartments,
+it can either (a) function at a full privileged level, or (b) be within its own
+small compartment. You can argue as well that the whole system (with unbound
+PCC/DDC) is a compartment.}
+
 Supposing compartmentalisation is performed between two unprivileged
 compartments via a privileged entity, it makes sense for an attacker to focus
 their efforts attacking that privileged compartment switcher, to perhaps gain
@@ -171,25 +184,52 @@ compartment.
 With the above model, a compartment transition would involve:
 \begin{itemize}
 \item identify the target compartment to be transitioned to, effectively
-executing the corresponding compartment function; \laurie{obvious question:
-how does one compartment say `switch to another compartment'? perhaps more
-precisely: what's the mechnanism for identifying a compartment and do we
-guarantee that it's unforgeable? do we hand out sealed capabilities to
-represent compartments or ... ?}
+executing the corresponding compartment function;
+%
+\laurie{obvious question: how does one compartment say `switch to another
+compartment'? perhaps more precisely: what's the mechnanism for identifying a
+compartment and do we guarantee that it's unforgeable? do we hand out sealed
+capabilities to represent compartments or ... ?}
+\al{In the current implementation, as presented here, we simplify to have each
+compartment have a single entry-point (i.e., a executable function covered by
+the PCC corresponding to that compartment),  and then transitioning to a
+compartment would involve jumping to execute that function. In a ``proper''
+implementation, I imagine you would have essentially a map from compartment to
+functions, more specifically a compartment identifier (could be hash), and a
+list of capabilities to be used for jumping to functions that the respective
+compartments wants to expose, in a library-like fashion. So yes, at compartment
+creation time, a way would be to create capabilities for functions you want to
+expose, and either copy those to all compartments, or perhaps hash them somehow,
+store the capabilities in the switcher for practical use, but each compartment
+would know what hash to use when it want to call a specific function from
+another compartment.}
+%
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
 \item install a capability pointing to the target function in the \texttt{PCC},
-and start execution;\laurie{ah! i actually wonder if we should do a second
+and start execution;
+%
+\laurie{ah! i actually wonder if we should do a second
 section called `hybrid memory + code compartmentalisation'? that way we can
 keep this first section simple. i suppose one can also have `hybrid code
 compartmentalisation' on its own too, but i can't immediately think of a
 great use case for that.}
+%
 \item upon returning from executing the target function, reinstall the
 \texttt{DDC} corresponding to the source compartment memory region.
 \end{itemize}
 The above process involves some level of trust between compartments, as they
 require access to capabilities defining memory accessible by the other
-compartment \laurie{i think this might be related to my question above about `how we identify a compartment'?}, as well as executable code within that compartment. Having access
+compartment
+%
+\laurie{i think this might be related to my question above about `how we identify a compartment'?}
+\al{And this is to add to the above ``obvious question'', at compartment
+initialization time, we would create the capabilities defining that
+compartment's executable and memory regions, to which other compartments won't
+have access to (due to DDC bounding), and of which more can't be created (unless
+the compartment itself decides to create some and leak).}
+%
+, as well as executable code within that compartment. Having access
 to these capabilities means lack of CHERI security guarantees over these ares in
 memory. Thus, we can strengthen our model by suggesting \emph{mutual distrust}
 between compartments themselves. This involves adding a level of indirection in
@@ -212,8 +252,9 @@ compartment which should be callable by other compartments;
 \item a capability defining a separate memory region to hold the above
 capabilities;
 \item a capability covering the code which will perform the transition;
-\item a capability that points to the memory address where the previous two
-capabilities are stored, consecutively, and in that order. \laurie{this suggests that a compartment can load a capability allowing it access to another compartment?}
+\item a sealed (discussed shortly) capability that points to the memory address
+where the previous two capabilities are stored, consecutively, and in that
+order.
 \end{itemize}
 The first two types of capabilities will be stored under the memory region
 allocated for compartment transitioning. The following two capabilities will
@@ -248,7 +289,7 @@ called function). This level of indirection allows a compartment to essentially
 change the state defined by the environment, by setting both \texttt{DDC} and
 \texttt{PCC} at once, without actually having access to them both as they would
 potentially reside outside memory defined as accessibly by the compartment's own
-\texttt{DDC} capability. Further, we can \emph{seal} the capability \laurie{which capability?} providing
+\texttt{DDC} capability. Further, we can \emph{seal} the capability providing
 the indirect memory address of the switcher's capabilities with a
 Morello-specific object type of \texttt{lpb}, indicating the capability should
 only be used as part of \texttt{lpb}-like instructions (which include
