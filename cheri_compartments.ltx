@@ -137,6 +137,8 @@ compartments.
 \section{Hybrid compartmentalisation}
 
 \subsection{Hybrid \laurie{Morello or CHERI in general?} data compartmentalisation}
+\al{Just a small note, that, also related to your other comment, I don't have a
+feel for the difference between data and code compartmentalisation.}
 
 \laurie{i assert that this section is
 probably better called `Hybrid data compartmentalisation', because we're not
@@ -207,6 +209,20 @@ system and I want to switch to compartment $C_{n - 1}$, I need to have some
 sort of identifier that says ``switch to $C_{n - 1}$ and execute some
 function''. My question is: what is the identifier? If it's a hash I can
 forge it. That suggests the ID should probably be a sealed capability?}
+\al{The simple answer is, at its core, you will execute a function in a
+container (therefore, transition), via a provided capability. The long answer
+is, that when we create a container, we would need to know which functions that
+we place within that container should be callable from others, and create
+appropriate capabilities. So, to call a function would be needing the DDC of the
+target container (already known ahead of time, as presumably that shouldn't
+change), and then the respective capability for the desired function, which
+would be installed as the PCC on transition. So what I was suggesting above is
+store all these PCC-capabilities (sealed) in a hashmap in the switcher, then use
+the hash to identify what capability the switcher needs to select for the PCC
+(thinking about it, the hash can just be the address of the target function). So
+you won't be able to forge it, as the hash/address/whatever won't give you
+access to the actual capability you will need to execute (which, in turn, would
+also be sealed to only be used via branch instructions).}
 %
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
