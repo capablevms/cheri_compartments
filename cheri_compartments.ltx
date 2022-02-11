@@ -139,6 +139,10 @@ compartments.
 \subsection{Hybrid \laurie{Morello or CHERI in general?} data compartmentalisation}
 \al{Just a small note, that, also related to your other comment, I don't have a
 feel for the difference between data and code compartmentalisation.}
+\laurie{at a simple level my feeling is that: `data compartmentalisation' ==
+`restrict the DDC' and `code compartmentalisation' == `restrict the PCC'. you
+can do either separately or both together (i.e.~there are three modes in this
+view of the world)}
 
 \laurie{i assert that this section is
 probably better called `Hybrid data compartmentalisation', because we're not
@@ -223,6 +227,14 @@ the hash to identify what capability the switcher needs to select for the PCC
 you won't be able to forge it, as the hash/address/whatever won't give you
 access to the actual capability you will need to execute (which, in turn, would
 also be sealed to only be used via branch instructions).}
+\laurie{ok, so you're proposing here combined data and code
+compartmentalisation. i think that code compartmentalisation isn't super
+useful for us at the moment (or, at least, until we work with JITed code)
+and it would make our lives to concentrate just on data
+compartmentalisation. that would allow us to explore the use case of
+``let's create multiple instances of the Lua interpreter within one Unix
+process and compartmentalise each'' -- by definition, we can't do code
+compartmentalisation in this case.}
 %
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
