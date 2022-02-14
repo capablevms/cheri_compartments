@@ -143,6 +143,8 @@ feel for the difference between data and code compartmentalisation.}
 `restrict the DDC' and `code compartmentalisation' == `restrict the PCC'. you
 can do either separately or both together (i.e.~there are three modes in this
 view of the world)}
+\al{With a few days thinking, I get the difference now. I do think what I'm
+outlining here is join data/code compertmentalization.}
 
 \laurie{i assert that this section is
 probably better called `Hybrid data compartmentalisation', because we're not
@@ -235,6 +237,11 @@ compartmentalisation. that would allow us to explore the use case of
 ``let's create multiple instances of the Lua interpreter within one Unix
 process and compartmentalise each'' -- by definition, we can't do code
 compartmentalisation in this case.}
+\al{As I said during the call, having both should not preclude being able to do
+the lua example, and I think I'm close enough to finalizing this approach than
+having to redesign stuff. We can re-evaluate once it's done, or it's taking
+longer than the few days I anticipate, or we get into practical problems trying
+to run the lua example we want.}
 %
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
