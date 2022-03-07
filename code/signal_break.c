@@ -11,8 +11,6 @@
 #  error This example must be run on a CHERI hybrid system
 #endif
 
-/* #define BASE_OFF (0xfffffff00000) */
-/* #define BASE_OFF ((vaddr_t) 1<<48) */
 #define STACK_LEN 4096
 
 void ddc_set(void *__capability cap) {
@@ -34,19 +32,16 @@ void main2() {
     kill(self_pid, SIGHUP);
     ddc_set(old_ddc);
     kill(self_pid, SIGHUP);
-    exit(0);
 }
 
 int main() {
-    // Force these functions to be loaded so that _rtld_bind doesn't bork when
-    // we restrict the DDC later.
-    signal(SIGHUP, SIG_IGN);
-    kill(getpid(), SIGHUP);
-
     assert(cheri_address_get(cheri_ddc_get()) == 0);
     void *new_stack = malloc(STACK_LEN) + STACK_LEN;
+    void *old_stack;
+    asm volatile("MOV %[old_stack], SP" : [old_stack]"+r"(old_stack) : : "memory");
     asm volatile("MOV SP, %[new_stack]" : : [new_stack] "r"(new_stack) : "memory");
     main2();
+    asm volatile("MOV SP, %[old_stack]" : : [old_stack] "r"(old_stack) : "memory");
 
     return 0;
 }
