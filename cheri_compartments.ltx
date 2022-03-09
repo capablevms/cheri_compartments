@@ -148,16 +148,24 @@ compartments.
 \subsection{Memory compartmentalisation}
 
 \laurie{LOAD\_CAP, I think, implicitly defines this. entirely dynamic.}
+\jacob{If my intuition about what "memory compartmentalisation" is is correct,
+then yes. We do, however, have to be careful not to inadvertently discount other
+capabilities; a capability that grants LOAD (or something else) is still part of
+the compartment, even in the absence of LOAD\_CAP. It may be able to read a
+cyptographic key or some other non-capability secret, for example.}
 
 
 \subsection{Link-time compartmentalisation}
 
 \laurie{What Hesham calls `ELF/linkage-based or library-based compartmentalization'}
-
+\jacob{This implies something about where the boundaries are set, but is the
+actual compartmentalisation different from "memory compartmentalisation"?
+(That's not rhetorical; I wonder if the GOT needs to be handled differently, for
+example.)}
 
 \section{Hybrid compartmentalisation}
 
-\subsection{Hybrid \laurie{Morello or CHERI in general?} data compartmentalisation}
+\subsection{Hybrid CHERI data compartmentalisation}
 \al{Just a small note, that, also related to your other comment, I don't have a
 feel for the difference between data and code compartmentalisation.}
 \laurie{at a simple level my feeling is that: `data compartmentalisation' ==
@@ -179,6 +187,11 @@ but a Morello one --- although I might be wrong).}\laurie{aha, let's ask jacob
 or otherwise try to work out if this is morello only or not. i reckon that
 it's probably a generic cheri feature to some extent, but there's probably
 not a nice api for it, so you have to hack it on each platform. i might be wrong!}
+\jacob{CHERIv8 (TR 951) has CSealEntry, which looks similar, though it can only
+use one seal type. I'm not sure if that's an important limitation. Even without
+CSealEntry, you could do this by making an appropriate sealing capability
+available to every compartment, so the general technique is availble to all
+CHERI implementations.}
 
 \laurie{one thing this paragraph made me realise is that if the user creates
 $n$ data compartments at run-time then we actually have $n+1$ compartments as
@@ -188,6 +201,15 @@ for the transition, and in order to make that mechanism opaque to compartments,
 it can either (a) function at a full privileged level, or (b) be within its own
 small compartment. You can argue as well that the whole system (with unbound
 PCC/DDC) is a compartment.}
+\jacob{Perhaps "at least $n$ compartments" is appropriate: In our discussion
+last week, we decided that removing a capability derives a new, lesser
+compartment from the current one. If the process of scrubbing private
+capabilities (to prepare for a compartment switch) requires several steps, then
+multiple (temporary) compartments will be created. On Morello, each capability
+register will need to be individually cleared, so there will usually be several
+steps! Since they are all subsets of the starting point, this distinction is
+probably not important. However, sometimes it \emph{is} important, and I have
+struggled to robustly define criteria for determining when that is the case.}
 
 Supposing compartmentalisation is performed between two unprivileged
 compartments via a privileged entity, it makes sense for an attacker to focus
