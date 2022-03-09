@@ -28,6 +28,8 @@ We have found that some of those names make it difficult to talk, and sometimes
 reason about, capability usage.
 Unfortunately, we can think of no better solution to this than to propose our
 own terminology.
+\jacob{That sticks out as being a bit too informal in the context. Suggestion:
+"To avoid ambiguity, we will explicitly define key terms that we use."}
 
 We use the term \textit{CHERI} to refer to the `abstract capability machine'
 that software can observe: that is, the combination of a capability hardware
@@ -35,15 +37,20 @@ instruction set, an ABI, and a user-facing library that exposes capability-relat
 We refer to specific hardware implementations by their name
 (e.g.~Arm's `Morello', or `CHERI RISC-V').
 
+\jacob{I'm not sure if they'd be considered "immutable". At least, no more than
+any other value in an architecture with a mostly constructive ISA. \emph{Sealed}
+capabilities are immutable (except for unsealing and de-authenticating
+operations) and that distinction may be useful later.}
 CHERI capabilities are immutable and thus a new \emph{child}
 capability must be derived from one or more \emph{parent} capabilities.
 We refer to a capability as \emph{authentic} (what CHERI calls
 `tagged' or `valid') if it has been derived from its parents according
 to CHERI's rules, or \emph{inauthentic} (what CHERI calls `untagged' or `invalid')
-otherwise. A capability consists of an \emph{address} in memory
-and a set of \emph{permissions}. Amongst the permissions are
-\emph{bounds} -- the region of memory an authentic capability is allowed to
-read/write from/to. A capability's bounds are from a \emph{low} (inclusive) to
+otherwise. A capability consists of an \emph{address} in one or more dimensions
+(usually memory) and a set of \emph{permissions}. Amongst the permissions are
+\emph{bounds} -- the region of space in which an authentic capability is allowed to
+operate.
+A capability's bounds are from a \emph{low} (inclusive) to
 a \emph{high} (exclusive) address and we refer to `a bound of $x$ bytes' to mean
 a capability where $\textit{high}-\textit{low}=x$.
 If a capability's address is contained within its bounds we refer to the capability as
@@ -51,13 +58,27 @@ a whole as \emph{in-bounds} or \emph{out-of-bounds} otherwise
 (see~\cite{woodruff19chericoncentrate} for an explanation of why an authentic
 capability might have an out-of-bounds address). Other permissions include
 boolean flags such as whether a capability can read/write to memory addresses
-within its bounds.
+within its bounds. Such permissions also define the dimensions to which
+the address refers: a capability with a \texttt{LOAD} permission
+inherently addresses memory, for example.
+\jacob{I'm conflicted here between offering general definitions, which may be
+hard to follow, or offering memory capabilities as an example. I've changed it
+to make it more general, but was that the right decision? Feel free to revert.}
 
 As well as capabilities (which on Morello and CHERI RISC-V, for example, are
 implemented as double-width addresses), CHERI also allows `traditional' single-width addresses
 to be used. Conventionally, a program which uses both traditional addresses and
 capabilities is said to be operating in \emph{hybrid} mode while a program
-which uses only capabilities is in \emph{pure capability} mode.
+which uses only capabilities is in \emph{pure capability} (or \emph{purecap})
+mode. However, these terms are tied to specific C implementations and are often
+insufficient when discussing other language models, or language-agnostic
+compartments. We will avoid unqualified use of these terms.
+\jacob{I just added that statement, based on our recent discussions. I realise
+that the next section immediately talks about "pure capability CHERI program"
+without (much) qualification. I think the general structure (and especially
+Figure~\ref{fig:reachability}) is right, but we might need to check that it
+flows correctly and isn't misleading, perhaps adding some detail to qualify what
+"pure capability compartmentalisation" means to us.}
 
 
 \section{Pure capability compartmentalisation}
