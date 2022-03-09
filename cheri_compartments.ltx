@@ -224,7 +224,9 @@ To exemplify, we model a simple system with two compartments (and will be
 abstracting away some of the finer details, such as memory management). Suppose
 we have two compartments, named \(f\) and \(g\). To further simplify this model,
 we shall assume each compartment is comprised of a single function of interest,
-and a compartment transition involves executing that particular function, then
+and a compartment transition
+\jacob{Aren't there two compartment transitions involved in a call like this?}
+involves executing that particular function, then
 returning. We shall further assume that each compartment has its own memory
 region, which serves as both stack and heap (again, specific details of memory
 allocation will be omitted), disjoint with memory regions of the other
@@ -285,9 +287,22 @@ the lua example, and I think I'm close enough to finalizing this approach than
 having to redesign stuff. We can re-evaluate once it's done, or it's taking
 longer than the few days I anticipate, or we get into practical problems trying
 to run the lua example we want.}
+\jacob{I agree with the conclusion arrived at above -- though I think there
+probably are uses for code compartmentalisation outside of JITs -- but I think
+that today's prototype, with a single function per compartment, actually scales
+to multiple functions quite nicely if we implement it as a different compartment
+with the same bounds (data and code), but a different entry point. Another
+point, though: if the caller compartment has direct access to the sentry, can
+they misuse it? That is, if the callee relies on the compartment switcher to
+clean anything up, then it must be sure that it can only be called from the switcher.
+In such an implementation, we would indeed need some other, abstract sealed
+capability. However, that's an implementation detail.}
 %
 \item install a capability in the \texttt{DDC} which covers the memory region
 corresponding to the target compartment;
+\jacob{Where does that come from? If the caller has it (e.g. in a register or in
+its reachable memory) then it's \emph{already} part of the compartment, and this
+initial model doesn't describe a compartment switch at all.}
 \item install a capability pointing to the target function in the \texttt{PCC},
 and start execution;
 %
@@ -296,9 +311,16 @@ section called `hybrid memory + code compartmentalisation'? that way we can
 keep this first section simple. i suppose one can also have `hybrid code
 compartmentalisation' on its own too, but i can't immediately think of a
 great use case for that.}
+\jacob{If we're switching data compartment, we \emph{must} also set the PCC to
+one of a set of predefined entry points. If we don't enforce that, then code
+could switch data compartments without also transferring execution control,
+which effectively gives compromised code access to all data compartments it can
+switch to (transitively). As a result, this bullet point is important. This
+subtlety is probably worth describing somewhere. Do we consider that to be "code
+compartmentalisation", or just a form of forward-edge CFI? I don't know.}
 %
 \item upon returning from executing the target function, reinstall the
-\texttt{DDC} corresponding to the source compartment memory region.
+\texttt{DDC} and \texttt{PCC} corresponding to the source compartment memory region.
 \end{itemize}
 The above process involves some level of trust between compartments, as they
 require access to capabilities defining memory accessible by the other
@@ -337,6 +359,8 @@ capabilities;
 \item a sealed (discussed shortly) capability that points to the memory address
 where the previous two capabilities are stored, consecutively, and in that
 order.
+\jacob{The order is important for Morello but that's an implementation
+detail. It's really just important that they're accessible only as a pair.}
 \end{itemize}
 The first two types of capabilities will be stored under the memory region
 allocated for compartment transitioning. The following two capabilities will
@@ -359,25 +383,34 @@ control of the memory region where comaprtment information is stored, it would
 be able to gain control of all compartments using that specific transition code.
 However, it would not gain control of any other part of the whole system.
 
+\jacob{Is this too implementation-specific? Do we need an "in our prototype"
+qualifier somewhere?}
 The actual process by which the switching code is invoked is via the Morello
 \texttt{ldpblr} instruction\cite{...}, which stands for ``Load Pair Branch with
-Link''. Given a register containing a capability, the instructions dereferences
-the memory address indicated by the value of the capability, reads two
-consecutive capabilities stored at that memory address, installs the first
-capability in the \texttt{DDC}, and performs a \texttt{blr} with the second
+Link to Register''. Given a register containing a capability, the instructions
+dereferences the memory address indicated by the value of the capability, reads
+two consecutive capabilities stored at that memory address, installs the first
+capability in \texttt{C29}, and performs a \texttt{blr} with the second
 (meaning installing the second in the \texttt{PCC}, and updating the
 \texttt{CLR} to the following instruction, to facilitate returning from the
 called function). This level of indirection allows a compartment to essentially
-change the state defined by the environment, by setting both \texttt{DDC} and
+change the state defined by the environment, by setting both \texttt{C29} and
 \texttt{PCC} at once, without actually having access to them both as they would
 potentially reside outside memory defined as accessibly by the compartment's own
-\texttt{DDC} capability. Further, we can \emph{seal} the capability providing
-the indirect memory address of the switcher's capabilities with a
-Morello-specific object type of \texttt{lpb}, indicating the capability should
-only be used as part of \texttt{lpb}-like instructions (which include
-\texttt{ldpblr}). This, however, requires the indirect memory capability be
-installed in register \texttt{c29}, as the unsealing operation is only performed
-if that is the source register provided to \texttt{ldpblr}.
+\texttt{DDC} capability. A hybrid callee can then install \texttt{C29} into its own
+\texttt{DDC}; a purecap callee may use it to restore its capability stack
+pointer (\texttt{csp}) and other general-purpose registers. Further, we can
+\emph{seal} the capability providing the indirect memory address of the
+switcher's capabilities with a Morello-specific object type of \texttt{lpb},
+indicating the capability should only be used as part of \texttt{lpb}-like
+instructions (which include \texttt{ldpblr}). This, however, requires the
+indirect memory capability be installed in register \texttt{C29}, as the
+unsealing operation is only performed if that is the source register provided to
+\texttt{ldpblr}.
+\jacob{I corrected this to \texttt{C29}. Readers may point out that other
+registers may be specified, but only \texttt{C29} allows the automatic unsealing
+behaviour, which gives the callee an important guarantee. (We probably need to
+examine that guarantee somewhere.)}
 
 
 
