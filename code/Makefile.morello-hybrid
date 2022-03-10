@@ -1,4 +1,4 @@
 CC = ${CHERIBASE}/output/morello-sdk/bin/clang
-CFLAGS = --std=gnu11 -Wall -g --config cheribsd-morello-hybrid.cfg -static
+CFLAGS = --std=gnu11 -Wall -O2 -g --config cheribsd-morello-hybrid.cfg -static
 
 include Makefile.inc

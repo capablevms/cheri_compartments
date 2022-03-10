@@ -43,6 +43,28 @@ void restrict_and_check() {
     kill(self_pid, SIGHUP);
 }
 
+void call_with_stack(void (*fn)(), void* stack);
+asm(".type call_with_stack, @function\n"
+    "call_with_stack:\n"
+    "    MOV x10, sp\n"
+    "    BIC sp, x1, 0xf\n" // Ensure 16-byte stack alignment.
+    // Save the return address and old stack, so we can get back.
+    "    STP x10, lr, [sp, #-16]!\n"
+    // We've now switched to a new stack. We must restore it before the end
+    // of the assembly block, because the C compiler is likely to generate
+    // stack accesses to access locals. We can, however, call out to another
+    // C function, since it shouldn't make any assumptions about its stack
+    // on entry and will work in blissful ignorance that it's not on the
+    // same stack as the calling function.
+    //
+    // We've broken an AAPCS64 rule here because we've escaped the stack
+    // limit, but in practice this works fine for demonstration purposes.
+    "    BLR x0\n"
+    // Restore the stack and return.
+    "    LDP x10, lr, [sp]\n"
+    "    MOV sp, x10\n"
+    "    RET lr\n");
+
 int main() {
     // The default DDC in CheriBSD spans the entirety of virtual memory, and it
     // puts the stack at such a high virtual address that it's difficult to
@@ -52,16 +74,7 @@ int main() {
     // at a relatively low virtual memory address, and restrict the DDC to
     // encompass virtual memory up to that address
     void *new_stack = malloc(STACK_LEN) + STACK_LEN;
-    void *old_stack;
-    asm volatile("MOV %[old_stack], SP" : [old_stack]"+r"(old_stack) : : "memory");
-    asm volatile("MOV SP, %[new_stack]" : : [new_stack] "r"(new_stack) : "memory");
-    // We've now switched to a new stack. In a real system we should do various
-    // clever things at this point to stop us getting into undefined behaviour,
-    // but we cheat and do the minimum that tends to work at -O0: we call a new
-    // function, which should then work in blissful ignorance that it's not on
-    // the same stack as the calling function.
-    restrict_and_check();
-    asm volatile("MOV SP, %[old_stack]" : : [old_stack] "r"(old_stack) : "memory");
+    call_with_stack(restrict_and_check, new_stack);
 
     return 0;
 }
